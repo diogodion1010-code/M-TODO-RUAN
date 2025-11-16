@@ -1,0 +1,29 @@
+local key = _G.UserKey
+local webhook = _G.Webhook
+
+-- Verificação da KEY
+if key ~= "KeyRUAN" then
+    game.Players.LocalPlayer:Kick("❌ KEY inválida!")
+    return
+end
+
+-- Enviar log para o Webhook
+pcall(function()
+    local HttpService = game:GetService("HttpService")
+    local data = {
+        content = "🔔 Key usada!\n📌 KEY: " .. key .. "\n👤 Player: " .. game.Players.LocalPlayer.Name
+    }
+
+    request = syn and syn.request or http_request or request or (http and http.request)
+    if request then
+        request({
+            Url = webhook,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(data)
+        })
+    end
+end)
+
+-- Carrega o script real
+loadstring(game:HttpGet("https://raw.githubusercontent.com/RUAN/NEW/main/main.lua"))()
